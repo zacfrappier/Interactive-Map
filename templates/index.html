@@ -1,0 +1,53 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Image Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    html, body { height: 100%; margin: 0; }
+    #map { height: 100vh; width: 100%; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <script>
+    // IMPORTANT: use pixel coordinates, not lat/lng
+    const map = L.map("map", {
+      crs: L.CRS.Simple,   // <-- makes Leaflet use a simple 2D coordinate system
+      minZoom: -5
+    });
+
+    // Put your image here (inside /static)
+    const imageUrl = "/static/eldenringmap.jpg";
+
+    // You MUST set the image size in pixels (width, height).
+    // Replace these with your actual image dimensions:
+    const imageWidth = 6780;
+    const imageHeight = 7049;
+
+    // In CRS.Simple: coordinates are [y, x]
+    const bounds = [[0, 0], [imageHeight, imageWidth]];
+
+    L.imageOverlay(imageUrl, bounds).addTo(map);
+    map.fitBounds(bounds);
+
+    // Click to drop markers + print coordinates (pixel coords)
+    map.on("click", (e) => {
+      const y = e.latlng.lat;
+      const x = e.latlng.lng;
+
+      L.marker([y, x]).addTo(map)
+        .bindPopup(`x: ${x.toFixed(1)}, y: ${y.toFixed(1)}`)
+        .openPopup();
+
+      console.log("Clicked pixel coords:", { x, y });
+    });
+  </script>
+</body>
+</html>
