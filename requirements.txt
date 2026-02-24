@@ -1,0 +1,14 @@
+Functional Requirements:
+  Interactive map hosted on webpage
+  Ability to upload the map file you want to use (picture file type)
+  Ability to place points of interest as markers on the map
+  Text box pops up to view description on a point of interest
+
+Non-Functional Requirements:
+  Ability to save collection
+  Ability to log in
+  Ability to share your personalized map with others
+
+Domain Requirements:
+  Functions on up-to-date Chrome and Firefox.
+  Support image file types: .png, .jpeg, .webp.  See: Mozilla Documentation https://developer.mozilla.org/en-US/docs/Web/Media/Guides/Formats/Image_types 
