@@ -1,8 +1,0 @@
-# Changelog
-
-## [Unreleased v0.1] 2/24/2026
-
-### Added
-
-- v.0.1 Prototype demonstrating map pan and zoom
-- v.0.1 Map markers can be placed on map points
