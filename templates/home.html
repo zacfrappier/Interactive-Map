@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% set title = "Home" %}
+
+{% block content %}
+<div class="layout">
+  <section class="panel map-panel">
+    <div class="panel-title">Map</div>
+    <div id="map"></div>
+    <div class="hint">
+      Click on the image to place a pin. Pins appear in the panel on the right.
+    </div>
+  </section>
+
+  <section class="panel sidebar">
+    <div class="panel-title">Pins</div>
+    <div id="pinList" class="pin-list">
+      <div class="empty" id="emptyState">No pins yet. Click on the map to create one.</div>
+    </div>
+  </section>
+</div>
+
+<script defer src="{{ url_for('static', filename='app.js') }}"></script>
+{% endblock %}

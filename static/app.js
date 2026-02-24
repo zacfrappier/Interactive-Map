@@ -1,7 +1,7 @@
 // ---- Image Map Settings ----
 // Put your image in /static and set the correct pixel size here:
 const IMAGE_URL = "/static/eldenringmap.jpg";   // <-- change if needed
-const IMAGE_WIDTH = 2000;               // <-- set to your image width (px)
+const IMAGE_WIDTH = 6780;               // <-- set to your image width (px)
 const IMAGE_HEIGHT = 7049;              // <-- set to your image height (px)
 
 // Leaflet "simple CRS" so we use pixel coords
