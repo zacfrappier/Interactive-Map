@@ -1,10 +1,11 @@
-from __future__ import annotations
-
-from dataclasses import dataclass
-from typing import Dict, List, Optional
-from pathlib import Path
-from uuid import uuid4
-
+from __future__ import annotations          # stores type hints as strings instead of evaluating at runtime. 
+from dataclasses import dataclass           # allows use of '@' decorator for makign class w/0 defining attributes/properties, can call class and pass specific attributes during call or edit late. data class is the shape of the box
+from typing import Dict, List, Optional     # typing describes how data is being used, specifically with lists, dictionaries, and optional, opt is string or none
+from pathlib import Path                    # pathlib assists working with paths and files, a path being a class that represents a file or folder in the system
+                                            # allows creation of a variable into a path, used for initial uploaded of the map in our 
+                                            # replaces os.path, and adds methods; .exists(), .mkdir(), .unlink() 
+from uuid import uuid4                      # universal unique identifiers, gives unique id's, hihgly unlikely to be repeated in instance
+                                            # prevents users from overwriting each others map files with same name. 
 from flask import (
     Flask,
     render_template,
@@ -29,9 +30,9 @@ app.secret_key = "dev-secret-change-me"  # Session key for local development
 # are stored and which file types are allowed.
 # -------------------------------------------------
 
-BASE_DIR = Path(__file__).resolve().parent
-UPLOAD_FOLDER = BASE_DIR / "uploads"
-UPLOAD_FOLDER.mkdir(exist_ok=True)
+BASE_DIR = Path(__file__).resolve().parent          # grabs absolute full path of parent to this file, converts to object
+UPLOAD_FOLDER = BASE_DIR / "uploads"                # assign directory for uploads
+UPLOAD_FOLDER.mkdir(exist_ok=True)                  # if directory doesnt exist, make it
 
 ALLOWED_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
 
@@ -41,6 +42,9 @@ ALLOWED_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
 # These keep the current working state of the app
 # while the Flask server is running.
 # -------------------------------------------------
+
+# @ is a decorator
+# decorators replace manual class definition , my_function = something(my_function)
 
 @dataclass
 class Pin:
@@ -52,8 +56,8 @@ class Pin:
     description: str
 
 
-PINS: List[Pin] = []
-NEXT_PIN_ID = 1
+PINS: List[Pin] = []        # PIN is a list of pin objects, crrently empty
+NEXT_PIN_ID = 1             # increments later
 
 USERS: Dict[str, str] = {}  # username -> password_hash
 
@@ -106,6 +110,7 @@ def allowed_image_file(filename: str) -> bool:
 # Page routes
 # These render the visible HTML pages.
 # -------------------------------------------------
+
 
 @app.get("/")
 def home():
