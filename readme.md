@@ -5,11 +5,11 @@ A simple application meant for creating maps, with information stored in pins. B
 
 ##  Setup 
 
-1) Clone the repository: `git clone https://github.com/zacfrappier/Interactive-Map`, `cd Interactive-Map`
+1) Clone the repository: `git clone https://github.com/zacfrappier/Interactive-Map`, navigate to the project directory using `cd Interactive-Map`.
 
-2) Create a virtual environment: `python -m venv <venv>` 
+2) Create a virtual environment: `python -m venv <venv>`. 
 > [!NOTE]
-> Don't include `< >`, these are used to indicate a modifiable field. `venv` is the defualt best practice name for virtual environment folders, but you can name it whatever you like.
+> Don't include `< >`, these are used to indicate a modifiable field. `venv` is the default best practice name for virtual environment folders, and will be automatically excluded by `.gitignore`.
 
 2) Start the virtual environment: `venv/scripts/activate`. You should see the text `(venv)` in green at the start of your terminal output.
 
