@@ -6,19 +6,19 @@ from pathlib import Path                    # pathlib assists working with paths
                                             # replaces os.path, and adds methods; .exists(), .mkdir(), .unlink() 
 from uuid import uuid4                      # universal unique identifiers, gives unique id's, hihgly unlikely to be repeated in instance
                                             # prevents users from overwriting each others map files with same name. 
-from flask import (
+from flask import (                         # flask is microframwork for python
     Flask,
-    render_template,
-    request,
-    jsonify,
-    redirect,
-    url_for,
-    session,
-    send_from_directory,
+    render_template,                        # renders HTML
+    request,                                # used to read data in form of json     used in pin creation
+    jsonify,                                # returns json response to frontend     used in pin creation
+    redirect,                               # sends user to different URL
+    url_for,                                # moves between pages
+    session,                                # stores specific data across requests
+    send_from_directory,                    # serves files from a folder
 )
-from werkzeug.security import generate_password_hash, check_password_hash
-from werkzeug.utils import secure_filename
-from PIL import Image
+from werkzeug.security import generate_password_hash, check_password_hash   # creates hash passwords from user input password
+from werkzeug.utils import secure_filename                                  # converts names into safe to save on local folder
+from PIL import Image                                                       #                                    
 
 app = Flask(__name__)
 app.secret_key = "dev-secret-change-me"  # Session key for local development
@@ -83,11 +83,11 @@ CURRENT_MAP = {
 # the route handlers.
 # -------------------------------------------------
 
-def current_user() -> Optional[str]:
-    return session.get("username")
+def current_user() -> Optional[str]:        # grabs username for current session
+    return session.get("username")          # session = 
 
 
-def pin_to_dict(pin: Pin) -> dict:
+def pin_to_dict(pin: Pin) -> dict:          # converts a pin object into a dictionary JSON-friendly format, needed b/c flask cant send python objects to the browser
     return {
         "id": pin.id,
         "x": pin.x,
@@ -98,47 +98,48 @@ def pin_to_dict(pin: Pin) -> dict:
     }
 
 
-def allowed_image_file(filename: str) -> bool:
+def allowed_image_file(filename: str) -> bool:      # checks if uploaded image is valid
     if "." not in filename:
         return False
 
-    ext = filename.rsplit(".", 1)[1].lower()
-    return ext in ALLOWED_IMAGE_EXTENSIONS
+    ext = filename.rsplit(".", 1)[1].lower()        # seperates anything after ex. map.png = png
+    return ext in ALLOWED_IMAGE_EXTENSIONS          # later uses extension name to validate
 
 
 # -------------------------------------------------
 # Page routes
 # These render the visible HTML pages.
+# combinations of GET and POST
 # -------------------------------------------------
 
-
-@app.get("/")
-def home():
-    return render_template(
+# initial page set up. when we run start http://127.0.0.1:5000/     
+@app.get("/")                       # flasks gets the route of '/', proceeds to run following def, home
+def home():                         # call this definition
+    return render_template(         # sends following info to browser through parameters of render_template() 
         "home.html",
         username=current_user(),
         current_map=CURRENT_MAP,
     )
 
 
-@app.get("/login")
+@app.get("/login")                  # flask gets login page info, displayes page
 def login():
     return render_template("login.html", username=current_user(), error=None)
 
 
-@app.post("/login")
+@app.post("/login")                 # post is for processing information 
 def login_post():
-    username = (request.form.get("username") or "").strip()
+    username = (request.form.get("username") or "").strip()     # reads what user is typing
     password = request.form.get("password") or ""
 
-    if not username or not password:
-        return render_template(
+    if not username or not password:                            # error handling                              
+        return render_template(                                 # rerender page with error msg
             "login.html",
             username=current_user(),
             error="Please enter username and password."
         )
 
-    pw_hash = USERS.get(username)
+    pw_hash = USERS.get(username)                                   # rerender 
     if not pw_hash or not check_password_hash(pw_hash, password):
         return render_template(
             "login.html",
@@ -219,7 +220,7 @@ def api_get_map():
 @app.post("/api/map/upload")
 def api_upload_map():
     global NEXT_PIN_ID
-
+    # error handling
     if "map_file" not in request.files:
         return jsonify({"ok": False, "error": "No file was uploaded."}), 400
 
@@ -231,10 +232,10 @@ def api_upload_map():
     if not allowed_image_file(file.filename):
         return jsonify({"ok": False, "error": "Unsupported file type."}), 400
 
-    safe_name = secure_filename(file.filename)
-    ext = safe_name.rsplit(".", 1)[1].lower()
-    unique_name = f"{uuid4().hex}.{ext}"
-    saved_path = UPLOAD_FOLDER / unique_name
+    safe_name = secure_filename(file.filename)      # this is the dependency that makes the name valid for local save
+    ext = safe_name.rsplit(".", 1)[1].lower()       # extract the file ext 
+    unique_name = f"{uuid4().hex}.{ext}"            # assigns hex names so users can have same name w/o overwriting each others files
+    saved_path = UPLOAD_FOLDER / unique_name        
 
     file.save(saved_path)
 
@@ -245,11 +246,11 @@ def api_upload_map():
         saved_path.unlink(missing_ok=True)
         return jsonify({"ok": False, "error": "Could not read image dimensions."}), 400
 
-    CURRENT_MAP["filename"] = unique_name
-    CURRENT_MAP["url"] = f"/uploads/{unique_name}"
-    CURRENT_MAP["width"] = width
-    CURRENT_MAP["height"] = height
-    CURRENT_MAP["source"] = "upload"
+    CURRENT_MAP["filename"] = unique_name                       # update current map
+    CURRENT_MAP["url"] = f"/uploads/{unique_name}"              
+    CURRENT_MAP["width"] = width                                
+    CURRENT_MAP["height"] = height                              
+    CURRENT_MAP["source"] = "upload"                            
 
     # Option A behavior:
     # when a new map is uploaded, all current pins are erased
