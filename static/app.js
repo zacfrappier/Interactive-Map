@@ -1,45 +1,56 @@
-// -------------------------------------------------
-// Current map state
-// This starts from the server-rendered map metadata
-// and can be replaced when the user uploads a new
-// image file.
-// -------------------------------------------------
-
+// Stores the current map metadata that Flask placed into the page before app.js loaded.
 let currentMap = window.CURRENT_MAP;
 
+// Holds the Leaflet map object after it is created.
 let map = null;
+
+// Holds the current Leaflet image overlay for the map image.
 let imageOverlay = null;
+
+// Stores the ID of the pin currently being moved, or null if no pin is being moved.
 let movingPinId = null;
+
+// Stores Leaflet marker objects by pin ID so they can be updated or removed later.
 const markerById = new Map();
 
+// Gets the sidebar container where pin cards are displayed.
 const pinList = document.getElementById("pinList");
+
+// Gets the “No pins yet” message element.
 const emptyState = document.getElementById("emptyState");
+
+// Gets the button used to clear all current pins.
 const clearPinsBtn = document.getElementById("clearPinsBtn");
 
+// Gets the map upload form.
 const mapUploadForm = document.getElementById("mapUploadForm");
+
+// Gets the file input where the user selects a new map image.
 const mapFileInput = document.getElementById("mapFileInput");
+
+// Gets the status text that shows upload progress or current map name.
 const mapUploadStatus = document.getElementById("mapUploadStatus");
 
 
-// -------------------------------------------------
-// Map setup helpers
-// These create or rebuild the Leaflet image map
-// based on the current image URL and dimensions.
-// -------------------------------------------------
-
+// Returns the Leaflet bounds using the current map image height and width.
 function getMapBounds() {
   return [[0, 0], [currentMap.height, currentMap.width]];
 }
 
+
+// Removes the existing Leaflet map and clears marker references before rebuilding.
 function destroyExistingMap() {
   if (map) {
     map.remove();
     map = null;
   }
+
   imageOverlay = null;
   markerById.clear();
 }
 
+
+// Creates the Leaflet image map, adds the image overlay, and attaches the click handler.
 function initializeMap() {
   const bounds = getMapBounds();
 
@@ -52,6 +63,7 @@ function initializeMap() {
   });
 
   imageOverlay = L.imageOverlay(currentMap.url, bounds).addTo(map);
+
   map.fitBounds(bounds);
 
   setTimeout(() => {
@@ -62,6 +74,8 @@ function initializeMap() {
   map.on("click", handleMapClick);
 }
 
+
+// Rebuilds the map after the current map image changes.
 function rebuildMap() {
   exitMoveMode();
   destroyExistingMap();
@@ -69,12 +83,7 @@ function rebuildMap() {
 }
 
 
-// -------------------------------------------------
-// Marker helpers
-// These create, update, and remove colored markers
-// so the map and sidebar stay in sync.
-// -------------------------------------------------
-
+// Creates a custom colored circular Leaflet marker icon.
 function createMarkerIcon(color) {
   return L.divIcon({
     className: "custom-pin-wrapper",
@@ -91,17 +100,23 @@ function createMarkerIcon(color) {
   });
 }
 
+
+// Adds a marker to the map for a pin and stores it by pin ID.
 function addMarker(pin) {
   const marker = L.marker([pin.y, pin.x], {
     icon: createMarkerIcon(pin.color),
   }).addTo(map);
 
   marker.bindPopup(`<strong>${pin.name}</strong><br>${pin.description || "No description"}`);
+
   markerById.set(pin.id, marker);
 }
 
+
+// Updates an existing marker’s position, color, and popup text.
 function updateMarker(pin) {
   const marker = markerById.get(pin.id);
+
   if (!marker) return;
 
   marker.setLatLng([pin.y, pin.x]);
@@ -109,51 +124,61 @@ function updateMarker(pin) {
   marker.bindPopup(`<strong>${pin.name}</strong><br>${pin.description || "No description"}`);
 }
 
+
+// Removes one marker from the map by its pin ID.
 function removeMarker(pinId) {
   const marker = markerById.get(pinId);
+
   if (!marker) return;
 
   map.removeLayer(marker);
   markerById.delete(pinId);
 }
 
+
+// Removes every marker from the map and clears the marker lookup table.
 function clearAllMarkers() {
   for (const marker of markerById.values()) {
     map.removeLayer(marker);
   }
+
   markerById.clear();
 }
 
 
-// -------------------------------------------------
-// Move-mode helpers
-// These let the user click Move on a pin, then place
-// it somewhere else on the map with a colored cursor.
-// -------------------------------------------------
-
+// Builds a small colored SVG cursor for move mode.
 function buildMoveCursor(color) {
   const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28">
       <circle cx="14" cy="14" r="7" fill="${color}" stroke="white" stroke-width="2"/>
     </svg>
   `;
+
   return `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}") 14 14, crosshair`;
 }
 
+
+// Sets the map cursor to the colored move cursor.
 function setMoveCursor(color) {
   const mapEl = document.getElementById("map");
+
   if (mapEl) {
     mapEl.style.cursor = buildMoveCursor(color);
   }
 }
 
+
+// Resets the map cursor back to normal.
 function resetMapCursor() {
   const mapEl = document.getElementById("map");
+
   if (mapEl) {
     mapEl.style.cursor = "";
   }
 }
 
+
+// Cancels move mode and resets all move buttons back to normal.
 function exitMoveMode() {
   movingPinId = null;
   resetMapCursor();
@@ -165,23 +190,23 @@ function exitMoveMode() {
 }
 
 
-// -------------------------------------------------
-// Shared UI helpers
-// These manage sidebar empty states and pin card
-// rendering for the current working pins.
-// -------------------------------------------------
-
+// Shows or hides the sidebar empty-state message.
 function setEmptyStateVisible(visible) {
   if (!emptyState) return;
+
   emptyState.style.display = visible ? "block" : "none";
 }
 
+
+// Clears the pin sidebar and restores the empty-state message.
 function clearPinUI() {
   pinList.innerHTML = "";
   pinList.appendChild(emptyState);
   setEmptyStateVisible(true);
 }
 
+
+// Replaces all current map markers and sidebar pin cards with a new pin list.
 function replaceCurrentPins(pins) {
   exitMoveMode();
   clearAllMarkers();
@@ -199,12 +224,7 @@ function replaceCurrentPins(pins) {
 }
 
 
-// -------------------------------------------------
-// API helpers
-// These wrap the backend calls for pins and map
-// upload so the UI logic stays cleaner.
-// -------------------------------------------------
-
+// Sends a PATCH request to update one pin on the Flask backend.
 async function patchPin(pinId, payload) {
   const res = await fetch(`/api/pins/${pinId}`, {
     method: "PATCH",
@@ -213,6 +233,7 @@ async function patchPin(pinId, payload) {
   });
 
   const data = await res.json();
+
   if (!res.ok) {
     throw new Error(data.error || "Pin update failed");
   }
@@ -220,12 +241,15 @@ async function patchPin(pinId, payload) {
   return data;
 }
 
+
+// Sends a DELETE request to remove one pin from the Flask backend.
 async function deletePin(pinId) {
   const res = await fetch(`/api/pins/${pinId}`, {
     method: "DELETE",
   });
 
   const data = await res.json();
+
   if (!res.ok) {
     throw new Error(data.error || "Pin delete failed");
   }
@@ -233,12 +257,15 @@ async function deletePin(pinId) {
   return data;
 }
 
+
+// Sends a DELETE request to clear all pins from the Flask backend.
 async function clearPins() {
   const res = await fetch("/api/pins", {
     method: "DELETE",
   });
 
   const data = await res.json();
+
   if (!res.ok) {
     throw new Error(data.error || "Clear pins failed");
   }
@@ -246,8 +273,11 @@ async function clearPins() {
   return data;
 }
 
+
+// Sends the selected image file to Flask using FormData.
 async function uploadMapFile(file) {
   const formData = new FormData();
+
   formData.append("map_file", file);
 
   const res = await fetch("/api/map/upload", {
@@ -256,6 +286,7 @@ async function uploadMapFile(file) {
   });
 
   const data = await res.json();
+
   if (!res.ok) {
     throw new Error(data.error || "Map upload failed");
   }
@@ -263,19 +294,17 @@ async function uploadMapFile(file) {
   return data;
 }
 
+
+// Loads the current backend pins and renders them on the map and sidebar.
 async function loadPins() {
   const res = await fetch("/api/pins");
   const pins = await res.json();
+
   replaceCurrentPins(pins);
 }
 
 
-// -------------------------------------------------
-// Pin card builder
-// This creates one sidebar card for a pin, including
-// rename, color, description, remove, and move.
-// -------------------------------------------------
-
+// Builds one sidebar card for a pin, including edit, color, description, remove, and move controls.
 function makePinCard(pin) {
   const card = document.createElement("div");
   card.className = "pin-card";
@@ -297,15 +326,19 @@ function makePinCard(pin) {
   nameEl.className = "pin-name";
   nameEl.textContent = pin.name;
 
+  // Lets the user rename a pin and syncs that change with Flask.
   nameEl.addEventListener("click", async () => {
     const newName = prompt("Enter a name for this pin:", pin.name);
+
     if (newName === null) return;
 
     const trimmed = newName.trim();
+
     if (!trimmed) return;
 
     try {
       const data = await patchPin(pin.id, { name: trimmed });
+
       pin.name = data.pin.name;
       nameEl.textContent = pin.name;
       updateMarker(pin);
@@ -334,6 +367,7 @@ function makePinCard(pin) {
   colorLabel.textContent = "Pin Color";
 
   const colorSelect = document.createElement("select");
+
   const colors = [
     { value: "gold", label: "Gold" },
     { value: "red", label: "Red" },
@@ -343,19 +377,25 @@ function makePinCard(pin) {
     { value: "white", label: "White" },
   ];
 
+  // Creates the dropdown options for available pin colors.
   colors.forEach((color) => {
     const option = document.createElement("option");
+
     option.value = color.value;
     option.textContent = color.label;
+
     if (color.value === pin.color) {
       option.selected = true;
     }
+
     colorSelect.appendChild(option);
   });
 
+  // Updates the pin color in Flask and on the map.
   colorSelect.addEventListener("change", async () => {
     try {
       const data = await patchPin(pin.id, { color: colorSelect.value });
+
       pin.color = data.pin.color;
       preview.style.background = pin.color;
       updateMarker(pin);
@@ -381,9 +421,11 @@ function makePinCard(pin) {
   descriptionBox.placeholder = "Add a description for this pin...";
   descriptionBox.value = pin.description || "";
 
+  // Updates the pin description in Flask and refreshes the marker popup.
   descriptionBox.addEventListener("change", async () => {
     try {
       const data = await patchPin(pin.id, { description: descriptionBox.value.trim() });
+
       pin.description = data.pin.description;
       updateMarker(pin);
     } catch (err) {
@@ -402,9 +444,11 @@ function makePinCard(pin) {
   removeBtn.type = "button";
   removeBtn.textContent = "Remove";
 
+  // Deletes the pin from Flask, removes its marker, and removes its sidebar card.
   removeBtn.addEventListener("click", async () => {
     try {
       await deletePin(pin.id);
+
       removeMarker(pin.id);
       card.remove();
 
@@ -425,6 +469,7 @@ function makePinCard(pin) {
   moveBtn.type = "button";
   moveBtn.textContent = "Move";
 
+  // Enables move mode so the next map click repositions this pin.
   moveBtn.addEventListener("click", () => {
     if (movingPinId === pin.id) {
       exitMoveMode();
@@ -449,19 +494,18 @@ function makePinCard(pin) {
   return card;
 }
 
+
+// Adds a pin card to the sidebar.
 function addPinToUI(pin) {
   setEmptyStateVisible(false);
+
   const card = makePinCard(pin);
+
   pinList.appendChild(card);
 }
 
 
-// -------------------------------------------------
-// Map click behavior
-// Normal clicks create a pin. If move mode is on,
-// the next click repositions the selected pin.
-// -------------------------------------------------
-
+// Handles map clicks by either creating a new pin or moving the selected pin.
 async function handleMapClick(event) {
   const y = event.latlng.lat;
   const x = event.latlng.lng;
@@ -474,6 +518,7 @@ async function handleMapClick(event) {
       updateMarker(updatedPin);
 
       const existingCard = pinList.querySelector(`[data-pin-id="${updatedPin.id}"]`);
+
       if (existingCard) {
         existingCard.querySelector(".pin-meta").textContent =
           `x: ${updatedPin.x.toFixed(1)}, y: ${updatedPin.y.toFixed(1)}`;
@@ -495,6 +540,7 @@ async function handleMapClick(event) {
   });
 
   const data = await res.json();
+
   if (!data.ok) {
     alert("Failed to create pin");
     return;
@@ -505,15 +551,11 @@ async function handleMapClick(event) {
 }
 
 
-// -------------------------------------------------
-// Toolbar actions
-// These support clearing current pins and uploading
-// a new map image, which resets the current pin set.
-// -------------------------------------------------
-
+// Handles the Clear Pins button by clearing backend pins and resetting the map/sidebar UI.
 clearPinsBtn.addEventListener("click", async () => {
   try {
     await clearPins();
+
     exitMoveMode();
     clearAllMarkers();
     clearPinUI();
@@ -522,10 +564,13 @@ clearPinsBtn.addEventListener("click", async () => {
   }
 });
 
+
+// Handles map uploads by sending the image to Flask, rebuilding the map, and clearing current pins.
 mapUploadForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   const file = mapFileInput.files[0];
+
   if (!file) {
     alert("Please choose an image file first.");
     return;
@@ -533,6 +578,7 @@ mapUploadForm.addEventListener("submit", async (event) => {
 
   try {
     mapUploadStatus.textContent = "Uploading map...";
+
     const data = await uploadMapFile(file);
 
     currentMap = data.map;
@@ -548,11 +594,8 @@ mapUploadForm.addEventListener("submit", async (event) => {
 });
 
 
-// -------------------------------------------------
-// Start-up
-// These initialize the image map and restore any
-// current working pins from the backend.
-// -------------------------------------------------
-
+// Creates the map when the page first loads.
 initializeMap();
+
+// Loads any current backend pins when the page first loads.
 loadPins();
